@@ -1,0 +1,69 @@
+{
+    "output_dir": "output2",
+    "train_directory": "/mnt/disks/persist/train",
+    "valid_directory": "/mnt/disks/persist/valid",
+    "langs": "flan",
+    "model_name_or_path": "bucket/output_t/mistralai/Mistral-7B-v0.1-gpt2-from-focus",
+    "target_tokenizer_name": "bucket/output_t/mistralai/Mistral-7B-v0.1-gpt2-from-focus",
+    "backbone_training": "full",
+    "hn_model_name_or_path": null,
+    "use_passthrough_hypernet": true,
+    "loss": "clm",
+    "n_embd": 4096,
+    "n_token_subsample": null,
+    "save_state": false,
+    "random_warmup_steps": 0,
+    "eval_steps": 10000,
+    "save_steps": 5000,
+    "logging_steps": 25,
+    "warmup_steps": [
+        0
+    ],
+    "steps": 50000,
+    "dtype": "bfloat16",
+    "use_unigram_bias": true,
+    "learning_rate": [
+        6e-6
+    ],
+    "max_grad_norm": 0.1,
+    "learning_rate_alpha": 1.0,
+    "extra_valid_tokenizer_names": [
+        "bucket/output_t/mistralai/Mistral-7B-v0.1-gpt2-from-focus"
+    ],
+    "extra_valid_files": [
+        "/mnt/disks/persist/valid/en.parquet"
+    ],
+    "extra_lang_codes": [
+        "flan"
+    ],
+    "n_valid_subsample": 4000,
+    "do_tokenizer_sampling": false,
+    "hn_rescale_embeddings": true,
+    "do_sequence_packing": false,
+    "hn_surface_maxlen": 7,
+    "tokenizer_sample_mean": 32768,
+    "tokenizer_sample_max": 32768,
+    "tokenizer_sample_std": 0,
+    "tokenizer_batch_size": 2048,
+    "weight_decay": 0.01,
+    "adam_beta2": 0.95,
+    "tokenizer_noise_mean": 1e-5,
+    "tokenizer_noise_std": 4,
+    "hn_add_inter_token_attention": false,
+    "hn_embed_target_priors": false,
+    "hn_inter_token_attention_bias_by_priors": false,
+    "hn_embed_using_source_embeddings": false,
+    "hn_predict_bias": false,
+    "train_batch_size": 32,
+    "eval_batch_size": 32,
+    "block_size": 512,
+    "hn_hidden_size": 768,
+    "hn_intermediate_size": 3072,
+    "gradient_accumulation_steps": 1,
+    "learnable_bias": false,
+    "add_target_priors_to_bias": false,
+    "lexical_loss_weight": 0.0,
+    "dataloader_num_workers": 64,
+    "mix_languages": false,
+    "debug": false
+}

@@ -1,0 +1,68 @@
+{
+    "output_dir": "output2",
+    "train_directory": "/mnt/disks/persist/train",
+    "valid_directory": "/mnt/disks/persist/valid",
+    "langs": "bucket/artifacts/en+code.txt",
+    "model_name_or_path": "meta-llama/Meta-Llama-3-8B",
+    "revision": "refs/pr/129",
+    "loss": "clm",
+    "n_embd": 4096,
+    "n_token_subsample": null,
+    "random_warmup_steps": 0,
+    "identity_n_subsample": 16384,
+    "identity_steps": 10000,
+    "eval_steps": 10000,
+    "warmup_steps": [
+        10000,
+        20000
+    ],
+    "steps": 200000,
+    "dtype": "bfloat16",
+    "use_unigram_bias": true,
+    "learning_rate": [
+        3e-4,
+        6e-5
+    ],
+    "max_grad_norm": 0.1,
+    "extra_valid_tokenizer_names": [
+        "bucket/artifacts/en_raw",
+        "bucket/artifacts/madlad/starcoder0001"
+    ],
+    "extra_valid_files": [
+        "/mnt/disks/persist/valid/en.parquet",
+        "/mnt/disks/persist/valid/python.parquet"
+    ],
+    "extra_lang_codes": [
+        "en",
+        "python"
+    ],
+    "n_valid_subsample": 4000,
+    "do_tokenizer_sampling": true,
+    "hn_rescale_embeddings": true,
+    "hn_surface_maxlen": 7,
+    "tokenizer_sample_mean": 32768,
+    "tokenizer_sample_max": 32768,
+    "tokenizer_sample_std": 0,
+    "tokenizer_batch_size": 2048,
+    "weight_decay": 0.01,
+    "adam_beta2": 0.95,
+    "hn_model_name_or_path": "roberta-base",
+    "tokenizer_noise_mean": 1e-5,
+    "tokenizer_noise_std": 4,
+    "hn_add_inter_token_attention": false,
+    "hn_embed_target_priors": false,
+    "hn_inter_token_attention_bias_by_priors": true,
+    "hn_embed_using_source_embeddings": true,
+    "train_batch_size": 128,
+    "eval_batch_size": 128,
+    "hn_num_attention_heads": 32,
+    "hn_hidden_size": 4096,
+    "hn_intermediate_size": 8192,
+    "gradient_accumulation_steps": 1,
+    "learnable_bias": false,
+    "add_target_priors_to_bias": false,
+    "lexical_loss_weight": 0.5,
+    "debug": false,
+    "dataloader_num_workers": 64,
+    "mix_languages": false
+}

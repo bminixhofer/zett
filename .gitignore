@@ -1,0 +1,12 @@
+output*
+out*
+datasets
+wandb
+logs
+*.egg-info
+notebooks
+artifacts
+bucket
+slurm-*
+
+__pycache__
