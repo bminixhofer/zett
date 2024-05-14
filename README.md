@@ -3,7 +3,7 @@
 <img src=https://github.com/bminixhofer/zett/assets/13353204/f64dbdf4-da05-4586-8eb6-bf5a622b2160 width=300px>
 </P>
 
-This repository contains the code for the paper Zero-Shot Tokenizer Transfer. ZeTT frees language models from their tokenizer, allowing you to use any model with any tokenizer, with little or no extra training⚡
+This repository contains the code for the paper [Zero-Shot Tokenizer Transfer](https://arxiv.org/abs/2405.07883). ZeTT frees language models from their tokenizer, allowing you to use any model with any tokenizer, with little or no extra training⚡
 
 ## Available pretrained hypernetworks
 
