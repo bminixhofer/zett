@@ -25,7 +25,7 @@ MAX_CHARS_PER_TOKEN = 16
 EPSILON = 1e-8
 SHARDING = PositionalSharding(np.array(jax.local_devices()))
 CACHE_DIR = Path(__file__).parent / ".." / ".cache"
-MADLAD_METADATA = pd.read_csv(Path(__file__).parent / ".." / "data/ "madlad400_metadata.csv", index_col="lang_code")
+MADLAD_METADATA = pd.read_csv(Path(__file__).parent / ".." / "data" / "madlad400_metadata.csv", index_col="lang_code")
 SPLIT_REGEX = r"'s|'t|'re|'ve|'m|'ll|'d| ?[\p{L}\p{M}]+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"
 
 
