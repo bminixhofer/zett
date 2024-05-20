@@ -10,13 +10,11 @@ class ZettHypernetConfig(PretrainedConfig):
         hn_hidden_size: int = None,
         hn_intermediate_size: int = None,
         hn_rescale_embeddings: bool = False,
-        use_unigram_bias: bool = False,
         hn_embed_target_priors: bool = False,
         hn_add_inter_token_attention: bool = False,
         hn_inter_token_attention_bias_by_priors: bool = False,
         hn_inter_token_attention_bias_scaler: float = 1.0,
         hn_n_inter_token_blocks: int = 16,
-        hn_language_adapter_bottleneck_dim: int = 0,
         hn_embed_using_source_embeddings: bool = False,
         hn_concat_last_hidden_state: bool = False,
         hn_single_head: bool = False,
@@ -37,7 +35,6 @@ class ZettHypernetConfig(PretrainedConfig):
         self.hn_hidden_size = hn_hidden_size
         self.hn_intermediate_size = hn_intermediate_size
         self.hn_rescale_embeddings = hn_rescale_embeddings
-        self.use_unigram_bias = use_unigram_bias
         self.hn_embed_target_priors = hn_embed_target_priors
         self.hn_add_inter_token_attention = hn_add_inter_token_attention
         self.hn_inter_token_attention_bias_by_priors = (
@@ -45,7 +42,6 @@ class ZettHypernetConfig(PretrainedConfig):
         )
         self.hn_inter_token_attention_bias_scaler = hn_inter_token_attention_bias_scaler
         self.hn_n_inter_token_blocks = hn_n_inter_token_blocks
-        self.hn_language_adapter_bottleneck_dim = hn_language_adapter_bottleneck_dim
         self.hn_embed_using_source_embeddings = hn_embed_using_source_embeddings
         self.hn_concat_last_hidden_state = hn_concat_last_hidden_state
         self.hn_single_head = hn_single_head

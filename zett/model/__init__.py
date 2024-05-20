@@ -136,21 +136,23 @@ class ProjectorBlock(nn.Module):
 
 @dataclass
 class HypernetArgs:
-    hn_model_name_or_path: str = "out_xlmv_byte"
+    hn_model_name_or_path: str = "output_hypernetwork"
     hn_surface_maxlen: int = 16
     hn_n_layers: int = 3
     n_embd: int = 768
     hn_hidden_size: int = None
     hn_intermediate_size: int = None
+    # whether to rescale the mean and standard deviation of the predicted embeddings
+    # to equal those of the original embeddings
     hn_rescale_embeddings: bool = False
-    use_unigram_bias: bool = False
+    # whether to embed log unigram probability as an extra item in the input sequence
     hn_embed_target_priors: bool = False
+    # whether to add sparse inter-token attention as described in the paper
     hn_add_inter_token_attention: bool = False
     hn_inter_token_attention_bias_by_priors: bool = False
     hn_inter_token_attention_bias_scaler: float = 1.0
     hn_n_inter_token_blocks: int = 16
-    hn_language_adapter_bottleneck_dim: int = 0
-    hn_embed_using_source_embeddings: bool = False
+    hn_embed_using_source_embeddings: bool = True
     hn_concat_last_hidden_state: bool = False
     hn_single_head: bool = False
     hn_predict_bias: bool = True
@@ -161,6 +163,10 @@ class HypernetArgs:
 
 
 class PassthroughHypernet(nn.Module):
+    """
+    A hypernet that embeds the first item in the input sequence using a learned embedding.
+    Equivalent to not using a hypernetwork, just learning embeddings directly.
+    """
     config: HypernetArgs
     vocab_size: int
     dtype: jnp.dtype = jnp.float32
@@ -270,9 +276,6 @@ class Hypernet(nn.Module):
         config.n_inter_token_blocks = self.config.hn_n_inter_token_blocks
         config.embed_using_source_embeddings = (
             self.config.hn_embed_using_source_embeddings
-        )
-        config.language_adapter_bottleneck_dim = (
-            self.config.hn_language_adapter_bottleneck_dim
         )
         config.embed_lang_id = self.config.hn_embed_lang_id
         config.n_langs = self.config.n_langs
