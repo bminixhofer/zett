@@ -13,6 +13,7 @@ This repository contains the code for the paper [Zero-Shot Tokenizer Transfer](h
 | [benjamin/zett-hypernetwork-Mistral-7B-v0.1](https://huggingface.co/benjamin/zett-hypernetwork-Mistral-7B-v0.1)                                                     | [mistralai/Mistral-7B-v0.1](https://huggingface.co/mistralai/Mistral-7B-v0.1)                                                     | English + Code             |
 | [benjamin/zett-hypernetwork-multilingual-Mistral-7B-v0.1](https://huggingface.co/benjamin/zett-hypernetwork-multilingual-Mistral-7B-v0.1)                           | [mistralai/Mistral-7B-v0.1](https://huggingface.co/mistralai/Mistral-7B-v0.1)                                                     | multilingual, 26 languages |
 | [benjamin/zett-hypernetwork-TinyLlama-1.1B-intermediate-step-1431k-3T](https://huggingface.co/benjamin/zett-hypernetwork-TinyLlama-1.1B-intermediate-step-1431k-3T) | [TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T](https://huggingface.co/TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T) | English + Code             |
+| [benjamin/zett-hypernetwork-Meta-Llama-3-8B-experimental](https://huggingface.co/benjamin/zett-hypernetwork-Meta-Llama-3-8B-experimental) | [meta-llama/Meta-Llama-3-8B](https://huggingface.co/meta-llama/Meta-Llama-3-8B) | __experimental__ English + Code, seems to underperform on Code             |
 
 ## Using a pretrained hypernetwork
 
