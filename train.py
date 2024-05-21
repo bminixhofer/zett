@@ -89,24 +89,17 @@ np.seterr(all="raise")
 @dataclass
 class TrainingArguments:
     output_dir: str
-    # path to initialize the hypernetwork from pretrained weights
     init_from_params: str = None
-    # "no" or "full", whether to train the backbone (e.g. for continued training)
-    backbone_training: str = "no"
-    # checkpoint to resume training from
+    backbone_training: str = "no"  # or "full"
     resume_from_checkpoint: str = None
-    # whether to reset steps when resuming from checkpoint (i.e. start again from step zero)
     resume_from_checkpoint_reset_steps: bool = False
     save_state: bool = True
-    loss: str = "clm" # or "mlm"
-    # if 'mix_languages' is true, each example in each batch is randomly sampled from one of the languages
-    # otherwise, languages are sampled on the batch level and batches are monolingual
+    loss: str = "clm"
     mix_languages: bool = False
     use_adafactor: bool = False
     train_batch_size: int = 256
     eval_batch_size: int = 256
     learning_rate: float = 3e-4
-    # factor to which to decay the learning rate
     learning_rate_alpha: float = 0.1
     random_learning_rate: float = None
     max_grad_norm: float = None
@@ -132,6 +125,7 @@ class TrainingArguments:
     lexical_loss_kind: str = "mse"
     apply_lexical_loss_to_init: bool = False
     add_target_priors_to_bias: bool = True
+    reinit_projectors: bool = False
     do_cost_analysis: bool = False
 
 
@@ -148,47 +142,31 @@ class ModelArguments:
 class DataArguments:
     train_directory: str
     valid_directory: str
-    # either a path to a file containing the languages code to use separated by whitespace
-    # or a space-separated list of languages
-    # in case this is a file, a comma can be used to specify the relative sampling ratio e.g. "en,1\nde,2"
     langs: str
     use_passthrough_hypernet: bool = False
-    # whether to pack sequences into a single tensor to avoid padding
     do_sequence_packing: bool = True
-    # whether to add a space before the input text in the tokenized sequence
-    # this should be equivalent to whether the original model tokenizer does this
     add_prefix_space: bool = True
-    # how many different queues to sample tokenizers from - save to keep to one
     n_pools: int = 1
     language_sampling_alpha: float = 0.3
     block_size: int = 128
     extra_valid_tokenizer_names: List[str] = None
     extra_valid_files: List[str] = None
     extra_lang_codes: List[str] = None
-    # how many examples to sample from the validation set
     n_valid_subsample: int = None
-    # name of the target tokenizer in case it is fixed - this is mutually exclusive with do_tokenizer_sampling
     target_tokenizer_name: str = None
-    # whether to sample tokenizers on-the-fly for every batch
-    do_tokenizer_sampling: bool = True
     pad_to_multiple_of: int = 128
-    # batch size to use for sampling the tokenizers i.e. size of the queue
+    do_tokenizer_sampling: bool = True
+    tokenizer_sample_reweigh_temperature: float = np.inf
     tokenizer_batch_size: int = 512
-    # tokenizer vocabulary size is sampled from a truncated Gaussian for every batch
-    # parameters below are the min, max, mean, stddev. of the distribution
     tokenizer_sample_min: int = 16384
     tokenizer_sample_max: int = 32768
     tokenizer_sample_mean: float = 32768.0
     tokenizer_sample_std: float = 0.0
-    # noise parameters for tokenizer sampling
     tokenizer_noise_std: float = 0.0
     tokenizer_noise_mean: float = 0.0
     dataloader_num_workers: int = 64
-    # number of tokens to predict for the MIMICK-style warmup ('identity') stage at every step
     identity_n_subsample: int = None
-    # number of tokens to predict for the main training stage
     n_token_subsample: int = 8192
-    # whether to sample a random span from the text instead of always starting at position 0
     sample_text_span: bool = True
     subsample_mode: str = "random"  # or "positives_only"
 
@@ -200,7 +178,6 @@ MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 class TrainState(train_state.TrainState):
     dropout_rng: jnp.ndarray
     source_embeddings: jnp.ndarray
-
 
 def prepare_batch(batch, metrics=None):
     batch_metrics = batch.pop("metrics", None)
@@ -366,9 +343,12 @@ def main():
             flat_model_params.pop(out_embedding_path).astype(np.float32).T,
             data_args.pad_to_multiple_of,
         )
-        source_embeddings = np.concatenate(
-            [source_embeddings_in, source_embeddings_out], axis=1
-        )
+        if not data_args.use_passthrough_hypernet:
+            source_embeddings = np.concatenate(
+                [source_embeddings_in, source_embeddings_out], axis=1
+            )
+        else:
+            source_embeddings = None
     else:
         source_embeddings = source_embeddings_in
 
@@ -559,11 +539,9 @@ def main():
         dset = load_dataset(
             "parquet",
             data_files={"train": data_args.extra_valid_files[i]},
-            split=(
-                f"train[:{data_args.n_valid_subsample}]"
-                if data_args.n_valid_subsample is not None
-                else "train"
-            ),
+            split=f"train[:{data_args.n_valid_subsample}]"
+            if data_args.n_valid_subsample is not None
+            else "train",
         )
         extra_valid_dataloaders.append(
             DataLoader(
@@ -609,7 +587,7 @@ def main():
         jax.random.PRNGKey(training_args.seed),
         jnp.ones((1, hn_args.hn_surface_maxlen), dtype=jnp.int32),
         jnp.ones(1, dtype=jnp.float32),
-        source_embeddings[:2],
+        source_embeddings[:2] if source_embeddings is not None else None,
         jnp.zeros((), dtype=jnp.int32),  # lang index
     )
 
@@ -706,9 +684,9 @@ def main():
             }
 
             if out_embedding_path is not None:
-                flat_hypernet_params[("output_embeddings", "embedding")] = (
-                    source_embeddings_out
-                )
+                flat_hypernet_params[
+                    ("output_embeddings", "embedding")
+                ] = source_embeddings_out
 
             hypernet_params = traverse_util.unflatten_dict(flat_hypernet_params)
 
@@ -731,6 +709,24 @@ def main():
                 )["params"]
 
         if len(flat_pretrained_params) > 0:
+            if training_args.reinit_projectors:
+                removed_params = []
+
+                for k in list(flat_pretrained_params.keys()):
+                    if k[0] in {
+                        "fallback_embeddings",
+                        "input_projection",
+                        "output_projection",
+                        "bias_projection",
+                        "scaler",
+                        "in_scaler",
+                    }:
+                        removed_params.append(k)
+                        del flat_pretrained_params[k]
+
+                print("Reinitialized params:")
+                pprint(removed_params)
+
             flat_hypernet_params = traverse_util.flatten_dict(hypernet_params)
             flat_hypernet_params.update(flat_pretrained_params)
             hypernet_params = traverse_util.unflatten_dict(flat_hypernet_params)
@@ -1065,9 +1061,9 @@ def main():
                     predicted_embeddings_out = predicted_embeddings_out.at[
                         special_indices
                     ].set(source_embeddings_out[special_indices_in_reference])
-                params_with_updated_embeddings[out_embedding_path] = (
-                    predicted_embeddings_out.T
-                )
+                params_with_updated_embeddings[
+                    out_embedding_path
+                ] = predicted_embeddings_out.T
 
             params_with_updated_embeddings = traverse_util.unflatten_dict(
                 params_with_updated_embeddings
@@ -1076,9 +1072,9 @@ def main():
             logits = model_fn(
                 input_ids=input_ids,
                 params=params_with_updated_embeddings,
-                dropout_rng=(
-                    dropout_rng if training_args.run_backbone_in_training_mode else None
-                ),
+                dropout_rng=dropout_rng
+                if training_args.run_backbone_in_training_mode
+                else None,
                 train=training_args.run_backbone_in_training_mode,
             ).logits
 
@@ -1093,16 +1089,18 @@ def main():
             return predicted_embeddings_in, predicted_embeddings_out, logits
 
         def compute_loss(params):
-            predicted_embeddings_in, predicted_embeddings_out, logits = (
-                compute_embeddings_and_logits(
-                    params,
-                    input_ids,
-                    target_surface_forms,
-                    target_priors,
-                    jnp.where(batch["mask"], 0.0, NEGATIVE_INF_FILL_VALUE),
-                    batch["special_indices"],
-                    batch["special_indices_in_reference"],
-                )
+            (
+                predicted_embeddings_in,
+                predicted_embeddings_out,
+                logits,
+            ) = compute_embeddings_and_logits(
+                params,
+                input_ids,
+                target_surface_forms,
+                target_priors,
+                jnp.where(batch["mask"], 0.0, NEGATIVE_INF_FILL_VALUE),
+                batch["special_indices"],
+                batch["special_indices_in_reference"],
             )
             loss = loss_fn(logits, labels, attention_mask, training_args.loss)
 
