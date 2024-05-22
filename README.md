@@ -79,10 +79,10 @@ python3 scripts/transfer.py \
 ```
 
 ```python
-from transformers import AutoModelForCaualLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 tokenizer = AutoTokenizer.from_pretrained("my-new-fancy-mistral")
-model = AutoModelForCaualLM.from_pretrained("my-new-fancy-mistral")
+model = AutoModelForCausalLM.from_pretrained("my-new-fancy-mistral")
 
 out = model(**tokenizer("Hello world!", return_tensors="pt"))
 ```
