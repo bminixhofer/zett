@@ -1,0 +1,1 @@
+gcloud compute tpus tpu-vm ssh $2 --worker=all --command="cd $PWD && ${1}" --zone=us-central2-b
