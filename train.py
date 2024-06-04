@@ -146,6 +146,7 @@ class DataArguments:
     use_passthrough_hypernet: bool = False
     do_sequence_packing: bool = True
     add_prefix_space: bool = True
+    add_eos: bool = True
     n_pools: int = 1
     language_sampling_alpha: float = 0.3
     block_size: int = 128
@@ -343,12 +344,7 @@ def main():
             flat_model_params.pop(out_embedding_path).astype(np.float32).T,
             data_args.pad_to_multiple_of,
         )
-        if not data_args.use_passthrough_hypernet:
-            source_embeddings = np.concatenate(
-                [source_embeddings_in, source_embeddings_out], axis=1
-            )
-        else:
-            source_embeddings = None
+        source_embeddings = np.concatenate([source_embeddings_in, source_embeddings_out], axis=1)
     else:
         source_embeddings = source_embeddings_in
 
@@ -400,9 +396,8 @@ def main():
                 data_args.train_directory,
                 lang_probs,
                 train_batch_size,
-                data_args.block_size,
+                block_size=data_args.block_size,
                 do_sequence_packing=data_args.do_sequence_packing,
-                eos_token=reference.eos_token,
             )
         ]
 
@@ -431,9 +426,8 @@ def main():
                 data_args.train_directory,
                 np.array([1.0]),
                 train_batch_size,
-                data_args.block_size,
+                block_size=data_args.block_size,
                 do_sequence_packing=data_args.do_sequence_packing,
-                eos_token=reference.eos_token,
             )
             for lang in data_args.langs
         ]
@@ -477,6 +471,7 @@ def main():
         data_args.valid_directory,
         data_args.n_valid_subsample,
         eval_batch_size,
+        block_size=data_args.block_size,
     )
     valid_collator = Collator(
         reference,
@@ -587,7 +582,7 @@ def main():
         jax.random.PRNGKey(training_args.seed),
         jnp.ones((1, hn_args.hn_surface_maxlen), dtype=jnp.int32),
         jnp.ones(1, dtype=jnp.float32),
-        source_embeddings[:2] if source_embeddings is not None else None,
+        source_embeddings[:2],
         jnp.zeros((), dtype=jnp.int32),  # lang index
     )
 
@@ -912,10 +907,12 @@ def main():
         byte_lengths=None,
         with_bpb=False,
     ):
+        attention_mask_2d = attention_mask.any(axis=-1)
+
         if loss_mode == "clm":
             shift_logits = logits[..., :-1, :]
             shift_labels = labels[..., 1:]
-            shift_attention_mask = attention_mask[..., :-1]
+            shift_attention_mask = attention_mask_2d[..., :-1]
 
             loss = (
                 optax.softmax_cross_entropy(
@@ -932,7 +929,7 @@ def main():
 
             return loss.sum() / shift_attention_mask.sum()
         elif loss_mode == "mlm":
-            label_mask = jnp.where((labels != -100) & (attention_mask == 1), 1.0, 0.0)
+            label_mask = jnp.where((labels != -100) & (attention_mask_2d == 1), 1.0, 0.0)
             loss = (
                 optax.softmax_cross_entropy(logits, onehot(labels, logits.shape[-1]))
                 * label_mask
@@ -1011,6 +1008,7 @@ def main():
         dropout_rng, new_dropout_rng = jax.random.split(state.dropout_rng)
         input_ids = batch.pop("input_ids")
         attention_mask = batch.pop("attention_mask")
+        position_ids = batch.pop("position_ids")
         labels = batch.pop("labels")
         target_surface_forms = batch.pop("target_surface_forms")
         target_priors = batch.pop("target_priors")
@@ -1071,6 +1069,8 @@ def main():
 
             logits = model_fn(
                 input_ids=input_ids,
+                attention_mask=jnp.expand_dims(attention_mask, axis=1),
+                position_ids=position_ids,
                 params=params_with_updated_embeddings,
                 dropout_rng=dropout_rng
                 if training_args.run_backbone_in_training_mode
@@ -1200,6 +1200,7 @@ def main():
         metrics = {}
         input_ids = batch.pop("input_ids")
         attention_mask = batch.pop("attention_mask")
+        position_ids = batch.pop("position_ids")
         mask = jnp.where(batch.pop("mask"), 0.0, NEGATIVE_INF_FILL_VALUE)
         special_indices = batch.pop("special_indices")
         special_indices_in_reference = batch.pop("special_indices_in_reference")
@@ -1257,7 +1258,11 @@ def main():
         )
 
         logits = model_fn(
-            input_ids=input_ids, params=params_with_updated_embeddings, train=False
+            input_ids=input_ids,
+            attention_mask=jnp.expand_dims(attention_mask, axis=1),
+            position_ids=position_ids,
+            params=params_with_updated_embeddings,
+            train=False
         ).logits
         logits = logits + mask[None, None, :]
 

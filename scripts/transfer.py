@@ -40,8 +40,8 @@ class Args:
     dtype: str = "bfloat16"
     revision: str = None
     do_batching: bool = False
-    batch_size: int = 16384  # must be multiple of 8 for sharding
-    min_k: int = 10
+    batch_size: int = 1024  # must be multiple of 8 for sharding
+    min_k: int = 1
     lang_path: str = None
     lang_code: str = None
     n_samples: int = 100

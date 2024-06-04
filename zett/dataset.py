@@ -20,7 +20,6 @@ class TrainDataset(IterableDataset):
         batch_size,
         block_size,
         do_sequence_packing=True,
-        eos_token=None,
     ):
         self.langs = langs
         self.train_directory = train_directory
@@ -29,8 +28,7 @@ class TrainDataset(IterableDataset):
         self.batch_size = batch_size
         self.block_size = block_size
         self.do_sequence_packing = do_sequence_packing
-        self.min_char_length = block_size * MAX_CHARS_PER_TOKEN
-        self.eos_token = eos_token
+        self.char_length = block_size * MAX_CHARS_PER_TOKEN
 
         self.dataset = {}
         for lang in list(self.langs):
@@ -86,14 +84,23 @@ class TrainDataset(IterableDataset):
             for _ in range(self.batch_size):
                 language = local_random_state.choice(self.langs, p=self.language_probs)
 
-                text = ""
+                text = []
+                n_chars = 0
 
                 # try to avoid padding during training if do_packing is True
-                while len(text) < self.min_char_length:
+                while n_chars < self.char_length:
                     index = int(
                         self.language_orders[language][examples_this_epoch[language]]
                     )
                     current_text = self.dataset[language][index]["text"].strip()
+
+                    # sample text spans from the text
+                    max_length = self.char_length - n_chars
+                    start = np.random.randint(0, max(len(current_text) - max_length, 0) + 1)
+                    end = start + max_length
+
+                    is_truncated = len(current_text) > end
+                    current_text = current_text[start:end]
 
                     examples_this_epoch[language] += 1
                     if examples_this_epoch[language] == len(
@@ -110,20 +117,13 @@ class TrainDataset(IterableDataset):
                     if len(current_text) == 0:
                         continue
 
-                    text += current_text
+                    text.append((current_text, is_truncated))
+                    n_chars += len(current_text)
 
                     if not self.do_sequence_packing:
                         break
 
-                    if self.eos_token is not None:
-                        text += self.eos_token
-
-                if self.do_sequence_packing:
-                    # remove last eos
-                    if self.eos_token is not None:
-                        text = text[: -len(self.eos_token)]
-
-                texts.append(text)
+                texts.append(tuple(text))
 
             yield {
                 "texts": texts,
@@ -132,10 +132,11 @@ class TrainDataset(IterableDataset):
 
 
 class ValidDataset(Dataset):
-    def __init__(self, langs, valid_directory, n_subsample, batch_size):
+    def __init__(self, langs, valid_directory, n_subsample, batch_size, block_size):
         self.batch_size = batch_size
         self.langs = langs
         self.n_subsample = n_subsample
+        self.char_length = block_size * MAX_CHARS_PER_TOKEN
 
         self.dataset = {}
 
@@ -184,9 +185,10 @@ class ValidDataset(Dataset):
             idx -= math.floor(len(self.dataset[self.langs[lang_idx]]) / self.batch_size)
             lang_idx += 1
 
+        texts = self.dataset[self.langs[lang_idx]][idx * self.batch_size:(idx + 1) * self.batch_size]["text"]
+        texts = [(text[:self.char_length], len(text) > self.char_length) for text in texts]
+
         return {
-            "texts": self.dataset[self.langs[lang_idx]][
-                idx * self.batch_size : (idx + 1) * self.batch_size
-            ]["text"],
+            "texts": texts,
             "lang_code": self.langs[lang_idx],
         }

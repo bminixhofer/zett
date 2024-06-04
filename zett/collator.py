@@ -138,9 +138,8 @@ class Collator:
 
                     for start in tqdm(range(0, len(texts), self.batch_size)):
                         end = start + self.batch_size
-
                         sampler.sample_tokenizer(
-                            {text: 1 for text in texts[start:end]},
+                            {"\n".join([x[0] for x in text]): 1 for text in texts[start:end]},
                             30_000,
                             16,
                             4,
@@ -163,16 +162,47 @@ class Collator:
     ):
         assert len(target_priors_to_use) == len(target_surface_form_matrix_to_use)
 
-        encodings = dict(
-            tokenizer(
-                texts,
-                max_length=self.data_args.block_size,
-                truncation=True,
-                padding="max_length",
-                return_tensors="np",
-                add_special_tokens=True,
-            )
-        )
+        input_ids = np.full((len(texts), self.data_args.block_size), fill_value=tokenizer.pad_token_id, dtype=np.int32)
+        attention_mask = np.zeros((len(texts), self.data_args.block_size, self.data_args.block_size), dtype=bool)
+        position_ids = np.zeros((len(texts), self.data_args.block_size), dtype=np.int32)
+
+        flat_texts = [x[0] for text in texts for x in text]
+        flat_input_ids = tokenizer(flat_texts, max_length=self.data_args.block_size, truncation=True, padding=False, return_tensors="np", add_special_tokens=True)["input_ids"]
+
+        flat_index = 0
+
+        for i in range(len(texts)):
+            start = 0
+
+            current_flat_index = flat_index
+
+            for (_, is_end) in texts[i]:
+                is_end = is_end and self.data_args.add_eos and self.data_args.block_size - start > len(flat_input_ids[current_flat_index])
+                current_input_ids = flat_input_ids[current_flat_index][:self.data_args.block_size - start]
+
+                end = start + len(current_input_ids)
+                input_ids[i, start:end] = current_input_ids
+
+                if is_end and end < self.data_args.block_size:
+                    input_ids[i, end] = tokenizer.eos_token_id
+                    end += 1
+
+                attention_mask[i, start:end, start:end] = True
+                position_ids[i, start:end] = np.arange(start, end)
+
+                start = end
+                current_flat_index += 1
+
+                if start == self.data_args.block_size:
+                    break
+
+            flat_index += len(texts[i])
+
+        encodings = {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "position_ids": position_ids,
+        }
 
         for key, value in (special_ids_map or {}).items():
             encodings["input_ids"][encodings["input_ids"] == key] = value
@@ -350,7 +380,7 @@ class Collator:
 
         pretoken_counts = {}
         for text in texts:
-            pretoken_counts[text] = 1
+            pretoken_counts["\n".join([x[0] for x in text])] = 1
 
         if self.data_args.tokenizer_noise_mean > 0:
             noise_std = np.random.lognormal(
