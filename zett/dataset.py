@@ -186,7 +186,7 @@ class ValidDataset(Dataset):
             lang_idx += 1
 
         texts = self.dataset[self.langs[lang_idx]][idx * self.batch_size:(idx + 1) * self.batch_size]["text"]
-        texts = [(text[:self.char_length], len(text) > self.char_length) for text in texts]
+        texts = [((text[:self.char_length], len(text) > self.char_length),) for text in texts]
 
         return {
             "texts": texts,

@@ -1150,44 +1150,48 @@ def main():
                 lexical_loss_in = (
                     distance_fn(predicted_embeddings_in, target_in)
                     * lexical_overlap_mask
-                )
-                lexical_loss_in = (
-                    lexical_loss_in.sum()
-                    / (lexical_overlap_mask.sum() + EPSILON)
-                    / jnp.linalg.norm(target_in, axis=1).mean()
-                )
+                ) / jnp.linalg.norm(target_in, axis=1).mean()
+
                 if out_embedding_path is not None:
                     lexical_loss_out = (
                         distance_fn(predicted_embeddings_out, target_out)
                         * lexical_overlap_mask
-                    )
-                    lexical_loss_out = (
-                        lexical_loss_out.sum()
-                        / (lexical_overlap_mask.sum() + EPSILON)
-                        / jnp.linalg.norm(target_out, axis=1).mean()
-                    )
+                    ) / jnp.linalg.norm(target_out, axis=1).mean()
 
                     lexical_loss = (lexical_loss_in + lexical_loss_out) / 2.0
                 else:
                     lexical_loss = lexical_loss_in
 
-                loss = loss + lexical_loss * training_args.lexical_loss_weight
+                min_lexical_loss = lexical_loss.min()
+                max_lexical_loss = lexical_loss.max()
+                mean_lexical_loss = lexical_loss.mean()
                 mean_lexical_overlap = lexical_overlap_mask.mean()
+                lexical_loss = (
+                    lexical_loss.sum()
+                    / (lexical_overlap_mask.sum() + EPSILON)
+                )
+                loss = loss + lexical_loss * training_args.lexical_loss_weight
             else:
-                lexical_loss = 0.0
+                min_lexical_loss = 0.0
+                max_lexical_loss = 0.0
+                mean_lexical_loss = 0.0
                 mean_lexical_overlap = 0.0
+                lexical_loss = 0.0
 
-            return loss, (lexical_loss, mean_lexical_overlap)
+            return loss, (lexical_loss, min_lexical_loss, max_lexical_loss, mean_lexical_loss, mean_lexical_overlap)
 
         grad_fn = jax.value_and_grad(compute_loss, has_aux=True)
-        (loss, (lexical_loss, mean_lexical_overlap)), grad = grad_fn(state.params)
+        (loss, (lexical_loss, min_lexical_loss, max_lexical_loss, mean_lexical_loss, mean_lexical_overlap)), grad = grad_fn(state.params)
 
         new_state = state.apply_gradients(grads=grad, dropout_rng=new_dropout_rng)
 
         metrics = {
             "loss": loss,
-            "lexical_loss": lexical_loss,
+            "min_lexical_loss": min_lexical_loss,
+            "max_lexical_loss": max_lexical_loss,
+            "mean_lexical_loss": mean_lexical_loss,
             "mean_lexical_overlap": mean_lexical_overlap,
+            "lexical_loss": lexical_loss,
             "learning_rate": random_learning_rate_fn(
                 state.step // training_args.gradient_accumulation_steps
             ),
