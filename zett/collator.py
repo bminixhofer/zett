@@ -176,7 +176,7 @@ class Collator:
 
             current_flat_index = flat_index
 
-            for (_, is_end) in texts[i]:
+            for (text_index, (_, is_end)) in enumerate(texts[i]):
                 is_end = is_end and self.data_args.add_eos and self.data_args.block_size - start > len(flat_input_ids[current_flat_index])
                 current_input_ids = flat_input_ids[current_flat_index][:self.data_args.block_size - start]
 
@@ -187,7 +187,8 @@ class Collator:
                     input_ids[i, end] = tokenizer.eos_token_id
                     end += 1
 
-                attention_mask[i, start:end, start:end] = True
+                if text_index == 0:
+                    attention_mask[i, start:end, start:end] = True # DEBUG
                 position_ids[i, start:end] = np.arange(start, end)
 
                 start = end
