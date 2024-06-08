@@ -187,7 +187,7 @@ class Collator:
                     input_ids[i, end] = tokenizer.eos_token_id
                     end += 1
 
-                if text_index == 0:
+                if text_index <= 1:
                     attention_mask[i, start:end, start:end] = True # DEBUG
                 position_ids[i, start:end] = np.arange(start, end)
 
