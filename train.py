@@ -912,7 +912,7 @@ def main():
         if loss_mode == "clm":
             shift_logits = logits[..., :-1, :]
             shift_labels = labels[..., 1:]
-            shift_attention_mask = attention_mask_2d[..., :-1]
+            shift_attention_mask = attention_mask_2d[..., 1:]
 
             loss = (
                 optax.softmax_cross_entropy(
