@@ -97,7 +97,7 @@ class TrainDataset(IterableDataset):
                     # sample text spans from the text
                     max_length = self.char_length - n_chars
                     start = np.random.randint(0, max(len(current_text) - max_length, 0) + 1)
-                    end = start + max_length
+                    end = start + min(max_length, len(current_text) - start)
 
                     is_truncated = len(current_text) > end
                     current_text = current_text[start:end]
