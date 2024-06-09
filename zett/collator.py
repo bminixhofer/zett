@@ -176,8 +176,8 @@ class Collator:
 
             current_flat_index = flat_index
 
-            for (text_index, (_, is_end)) in enumerate(texts[i]):
-                is_end = is_end and self.data_args.add_eos and self.data_args.block_size - start > len(flat_input_ids[current_flat_index])
+            for (text_index, (_, is_truncated)) in enumerate(texts[i]):
+                is_end = not is_truncated and self.data_args.add_eos and self.data_args.block_size - start > len(flat_input_ids[current_flat_index])
                 current_input_ids = flat_input_ids[current_flat_index][:self.data_args.block_size - start]
 
                 end = start + len(current_input_ids)
@@ -188,7 +188,7 @@ class Collator:
                     end += 1
 
                 attention_mask[i, start:end, start:end] = True
-                position_ids[i, start:end] = np.arange(start, end)
+                position_ids[i, start:end] = np.arange(0, end - start)
 
                 start = end
                 current_flat_index += 1
