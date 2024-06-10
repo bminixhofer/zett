@@ -903,6 +903,7 @@ def main():
         logits,
         labels,
         attention_mask,
+        position_ids,
         loss_mode,
         byte_lengths=None,
         with_bpb=False,
@@ -912,7 +913,9 @@ def main():
         if loss_mode == "clm":
             shift_logits = logits[..., :-1, :]
             shift_labels = labels[..., 1:]
-            shift_attention_mask = attention_mask_2d[..., 1:]
+
+            last_token_in_sequence = position_ids[..., 1:] == 0
+            shift_attention_mask = attention_mask_2d[..., 1:] * ~last_token_in_sequence
 
             loss = (
                 optax.softmax_cross_entropy(
@@ -1102,7 +1105,7 @@ def main():
                 batch["special_indices"],
                 batch["special_indices_in_reference"],
             )
-            loss = loss_fn(logits, labels, attention_mask, training_args.loss)
+            loss = loss_fn(logits, labels, attention_mask, position_ids, training_args.loss)
 
             if hn_args.hn_embed_using_source_embeddings:
                 if training_args.apply_lexical_loss_to_init:
@@ -1281,6 +1284,7 @@ def main():
                 logits,
                 labels,
                 attention_mask,
+                position_ids,
                 training_args.loss,
                 byte_lengths=byte_lengths,
                 with_bpb=True,
@@ -1293,6 +1297,7 @@ def main():
                 logits,
                 labels,
                 attention_mask,
+                position_ids,
                 training_args.loss,
             )
 
