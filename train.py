@@ -1058,8 +1058,8 @@ def main():
                 params_with_updated_embeddings[bias_path] = jnp.zeros(
                     len(surface_forms), dtype=predicted_embeddings_in.dtype
                 )
-            if training_args.overwrite_special_token_embeddings and out_embedding_path is not None:
-                if source_embeddings_out is not None:
+            if out_embedding_path is not None:
+                if training_args.overwrite_special_token_embeddings and source_embeddings_out is not None:
                     predicted_embeddings_out = predicted_embeddings_out.at[
                         special_indices
                     ].set(source_embeddings_out[special_indices_in_reference])
