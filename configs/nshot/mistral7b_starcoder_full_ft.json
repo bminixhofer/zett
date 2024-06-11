@@ -63,6 +63,7 @@
     "learnable_bias": false,
     "add_target_priors_to_bias": false,
     "do_sequence_packing": true,
+    "overwrite_special_token_embeddings": false,
     "lexical_loss_kind": "mse",
     "apply_lexical_loss_to_init": true,
     "lexical_loss_weight": 0.5,

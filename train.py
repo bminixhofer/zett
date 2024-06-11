@@ -120,6 +120,7 @@ class TrainingArguments:
     gradient_accumulation_steps: int = 1
     debug: bool = False
     run_backbone_in_training_mode: bool = False
+    overwrite_special_token_embeddings: bool = True
     learnable_bias: bool = False
     lexical_loss_weight: float = 0.0
     lexical_loss_kind: str = "mse"
@@ -1045,7 +1046,7 @@ def main():
                 source_embeddings=state.source_embeddings,
                 lang_index=lang_index,
             )
-            if source_embeddings_in is not None:
+            if training_args.overwrite_special_token_embeddings and source_embeddings_in is not None:
                 predicted_embeddings_in = predicted_embeddings_in.at[
                     special_indices
                 ].set(source_embeddings_in[special_indices_in_reference])
@@ -1057,7 +1058,7 @@ def main():
                 params_with_updated_embeddings[bias_path] = jnp.zeros(
                     len(surface_forms), dtype=predicted_embeddings_in.dtype
                 )
-            if out_embedding_path is not None:
+            if training_args.overwrite_special_token_embeddings and out_embedding_path is not None:
                 if source_embeddings_out is not None:
                     predicted_embeddings_out = predicted_embeddings_out.at[
                         special_indices
@@ -1236,11 +1237,11 @@ def main():
                 source_embeddings=state.source_embeddings,
                 lang_index=lang_index,
             )
-            if source_embeddings_in is not None:
+            if training_args.overwrite_special_token_embeddings and source_embeddings_in is not None:
                 input_embeddings = input_embeddings.at[special_indices].set(
                     source_embeddings_in[special_indices_in_reference]
                 )
-            if output_embeddings is not None and source_embeddings_out is not None:
+            if training_args.overwrite_special_token_embeddings and output_embeddings is not None and source_embeddings_out is not None:
                 output_embeddings = output_embeddings.at[special_indices].set(
                     source_embeddings_out[special_indices_in_reference]
                 )

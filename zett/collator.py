@@ -166,6 +166,10 @@ class Collator:
         attention_mask = np.zeros((len(texts), self.data_args.block_size, self.data_args.block_size), dtype=bool)
         position_ids = np.zeros((len(texts), self.data_args.block_size), dtype=np.int32)
 
+        if isinstance(texts[0], str):
+            # expand
+            texts = [[(text, False)] for text in texts]
+
         flat_texts = [x[0] for text in texts for x in text]
         flat_input_ids = tokenizer(flat_texts, max_length=self.data_args.block_size, truncation=True, padding=False, return_tensors="np", add_special_tokens=True)["input_ids"]
 
