@@ -1,0 +1,2 @@
+gcloud compute tpus tpu-vm scp scripts/combine_checkpoint.py $2:~/hypertoken/scripts/ --zone=us-central2-b --worker=all
+gcloud compute tpus tpu-vm ssh $2 --command="cd hypertoken && python3 scripts/combine_checkpoint.py --name=${1}" --worker=all --zone=us-central2-b
