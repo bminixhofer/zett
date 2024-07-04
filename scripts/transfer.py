@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from flax import serialization, traverse_util
 import jax
@@ -39,14 +40,88 @@ class Args:
     copy_inner_parameters_from: str = None
     dtype: str = "bfloat16"
     revision: str = None
-    do_batching: bool = False
+    do_batching: bool = True
     batch_size: int = 16384  # must be multiple of 8 for sharding
+    sample_batches: bool = False
     min_k: int = 10
+    n_samples: int = 100
     lang_path: str = None
     lang_code: str = None
-    n_samples: int = 100
     make_whitespace_consistent: bool = True
     save_pt: bool = False
+
+
+def batched_inference(target_surface_form_matrix, target_priors, config, args):
+    original_length = len(target_surface_form_matrix)
+
+    if args.sample_batches:
+        indices = get_sample_indices(
+            original_length, target_priors, args.batch_size, args.min_k, args.n_samples
+        )
+        empty_in_last_batch = 0
+    else:
+        shuffled_indices = np.random.permutation(original_length)
+        total_length = math.ceil(original_length / args.batch_size) * args.batch_size
+        padded = np.pad(shuffled_indices, (0, total_length - original_length))
+        indices = np.array_split(padded, total_length // args.batch_size)
+        empty_in_last_batch = total_length - original_length
+
+    predicted_embeddings_in = np.zeros(
+        (original_length, config.hidden_size), dtype=np.float32
+    )
+    predicted_embeddings_out = (
+        np.zeros((original_length, config.hidden_size), dtype=np.float32)
+        if embedding_path_out is not None
+        else None
+    )
+    predicted_bias = (
+        np.zeros(original_length, dtype=np.float32)
+        if bias_path is not None
+        else None
+    )
+
+    for i, batch_indices in tqdm(enumerate(indices), desc="Predicting batches..."):
+        last_batch = i == len(indices) - 1
+        (
+            predicted_embeddings_in_batch,
+            predicted_embeddings_out_batch,
+            predicted_bias_batch,
+        ) = predict(
+                    jax.device_put(target_surface_form_matrix[batch_indices], SHARDING.reshape((-1, 1)), ),
+                    jax.device_put(target_priors[batch_indices], SHARDING.reshape((-1,))),
+        )
+
+        if last_batch and empty_in_last_batch > 0:
+            batch_indices = batch_indices[:-empty_in_last_batch]
+            predicted_embeddings_in_batch = predicted_embeddings_in_batch[
+                                            :-empty_in_last_batch
+                                            ]
+            if predicted_embeddings_out is not None:
+                predicted_embeddings_out_batch = predicted_embeddings_out_batch[
+                                                 :-empty_in_last_batch
+                                                 ]
+            if predicted_bias is not None:
+                predicted_bias_batch = predicted_bias_batch[:-empty_in_last_batch]
+        predicted_embeddings_in[batch_indices] += predicted_embeddings_in_batch
+        if predicted_embeddings_out is not None:
+            predicted_embeddings_out[
+                batch_indices
+            ] += predicted_embeddings_out_batch
+        if predicted_bias is not None:
+            predicted_bias[batch_indices] += predicted_bias_batch
+
+    if args.sample_batches:
+        # since tokens can be seen multiple times, those embeddings need to be averaged
+        values, counts = np.unique(indices, return_counts=True)
+        assert sorted(values) == list(values)
+
+        predicted_embeddings_in /= counts[:, None]
+        if predicted_embeddings_out is not None:
+            predicted_embeddings_out /= counts[:, None]
+        if predicted_bias is not None:
+            predicted_bias /= counts
+
+    return predicted_embeddings_in, predicted_embeddings_out, predicted_bias
 
 
 if __name__ == "__main__":
@@ -161,54 +236,9 @@ if __name__ == "__main__":
     original_length = len(target_surface_form_matrix)
 
     if args.do_batching:
-        indices = get_sample_indices(
-            original_length, target_priors, args.batch_size, args.min_k, args.n_samples
+        predicted_embeddings_in, predicted_embeddings_out, predicted_bias = batched_inference(
+            target_surface_form_matrix, target_priors, config, args
         )
-
-        predicted_embeddings_in = np.zeros(
-            (original_length, config.hidden_size), dtype=np.float32
-        )
-        predicted_embeddings_out = (
-            np.zeros((original_length, config.hidden_size), dtype=np.float32)
-            if embedding_path_out is not None
-            else None
-        )
-        predicted_bias = (
-            np.zeros(original_length, dtype=np.float32)
-            if bias_path is not None
-            else None
-        )
-
-        for sample_indices in tqdm(indices, desc="Predicting batches..."):
-            (
-                predicted_embeddings_in_batch,
-                predicted_embeddings_out_batch,
-                predicted_bias_batch,
-            ) = predict(
-                jax.device_put(
-                    target_surface_form_matrix[sample_indices],
-                    SHARDING.reshape((-1, 1)),
-                ),
-                jax.device_put(target_priors[sample_indices], SHARDING.reshape((-1,))),
-            )
-
-            predicted_embeddings_in[sample_indices] += predicted_embeddings_in_batch
-            if predicted_embeddings_out is not None:
-                predicted_embeddings_out[
-                    sample_indices
-                ] += predicted_embeddings_out_batch
-            if predicted_bias is not None:
-                predicted_bias[sample_indices] += predicted_bias_batch
-
-        values, counts = np.unique(indices, return_counts=True)
-
-        assert sorted(values) == list(values)
-
-        predicted_embeddings_in /= counts[:, None]
-        if predicted_embeddings_out is not None:
-            predicted_embeddings_out /= counts[:, None]
-        if predicted_bias is not None:
-            predicted_bias /= counts
     else:
         # pad to multiple of 128
         pad_to = 128
