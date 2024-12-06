@@ -1,25 +1,21 @@
-import json
 import logging
-import math
 import os
 import sys
 import time
 from dataclasses import asdict, dataclass
-from typing import Callable, List, Optional
+from typing import List, Optional
 from pprint import pprint
 from functools import partial
 import regex as re
 import copy
 
-import flax
 import jax
 import jax.numpy as jnp
 import numpy as np
 import wandb
 import optax
-from flax import jax_utils, traverse_util
+from flax import traverse_util
 from flax.training import train_state
-from flax.core.frozen_dict import unfreeze
 from flax.training.common_utils import stack_forest, onehot
 from flax import serialization
 from tqdm import tqdm
@@ -33,13 +29,10 @@ from jax.experimental.multihost_utils import (
     process_allgather,
 )
 from jax.sharding import PartitionSpec as P, NamedSharding
-import random
 
 from transformers import (
-    CONFIG_MAPPING,
     FLAX_MODEL_FOR_CAUSAL_LM_MAPPING,
     AutoTokenizer,
-    FlaxAutoModel,
     AutoConfig,
     HfArgumentParser,
     set_seed,
@@ -68,8 +61,6 @@ from zett.utils import (
     create_learning_rate_fn,
     MADLAD_METADATA,
     NEGATIVE_INF_FILL_VALUE,
-    SHARDING,
-    get_sample_indices,
     EPSILON,
     get_surface_form_matrix,
     keystr,
@@ -1451,7 +1442,7 @@ def main():
 
             if jax.process_index() == 0:
                 print(eval_metrics)
-                wandb.log(eval_metrics, step=step + 1)
+                wandb.log(eval_metrics, step=0)
 
         for step in tqdm(range(training_args.steps), disable=jax.process_index() != 0):
             do_replay = resume_step > step * training_args.gradient_accumulation_steps
