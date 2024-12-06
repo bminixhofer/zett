@@ -5,7 +5,6 @@ wandb
 logs
 *.egg-info
 notebooks
-artifacts
 bucket
 slurm-*
 
