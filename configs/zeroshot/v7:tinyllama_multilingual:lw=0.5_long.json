@@ -2,7 +2,7 @@
     "output_dir": "output2",
     "train_directory": "/mnt/disks/persist/train",
     "valid_directory": "/mnt/disks/persist/valid",
-    "langs": "bucket/artifacts/30l.txt",
+    "langs": "artifacts/26l.txt",
     "init_from_params": "bucket/models/v7_tinyllama_final",
     "model_name_or_path": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
     "revision": "refs/pr/8",

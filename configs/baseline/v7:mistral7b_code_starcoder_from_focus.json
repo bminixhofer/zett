@@ -2,7 +2,7 @@
     "output_dir": "output2",
     "train_directory": "/mnt/disks/persist/train",
     "valid_directory": "/mnt/disks/persist/valid",
-    "langs": "bucket/artifacts/code.txt",
+    "langs": "artifacts/code.txt",
     "model_name_or_path": "bucket/output_t/mistralai/Mistral-7B-v0.1-starcoder-from-focus",
     "target_tokenizer_name": "bucket/output_t/mistralai/Mistral-7B-v0.1-starcoder-from-focus",
     "backbone_training": "full",

@@ -4,7 +4,7 @@
     "valid_directory": "/mnt/disks/persist/valid",
     "langs": "en",
     "model_name_or_path": "gpt2",
-    "tokenizer_name": "bucket/artifacts/madlad_final/gpt20001",
+    "tokenizer_name": "artifacts/tokenizers/gpt20001",
     "loss": "clm",
     "n_embd": 768,
     "n_token_subsample": null,

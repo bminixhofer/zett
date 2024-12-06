@@ -2,7 +2,7 @@
     "output_dir": "output",
     "train_directory": "/mnt/disks/persist/train",
     "valid_directory": "/mnt/disks/persist/valid",
-    "langs": "bucket/artifacts/26l.txt",
+    "langs": "artifacts/26l.txt",
     "model_name_or_path": "FacebookAI/xlm-roberta-base",
     "loss": "mlm",
     "n_embd": 768,

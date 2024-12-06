@@ -2,7 +2,7 @@
     "output_dir": "output2",
     "train_directory": "/mnt/disks/persist/train",
     "valid_directory": "/mnt/disks/persist/valid",
-    "langs": "bucket/artifacts/en+code.txt",
+    "langs": "artifacts/en+code.txt",
     "model_name_or_path": "mistralai/Mistral-7B-v0.1",
     "revision": "refs/pr/95",
     "loss": "clm",

@@ -5,7 +5,7 @@
     "langs": "flan",
     "model_name_or_path": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
     "init_from_params": "bucket/models/v7_tinyllama_final",
-    "target_tokenizer_name": "bucket/artifacts/madlad_final/gpt20001",
+    "target_tokenizer_name": "artifacts/tokenizers/gpt20001",
     "revision": "refs/pr/8",
     "backbone_training": "full",
     "loss": "clm",
@@ -29,7 +29,7 @@
     "learning_rate_alpha": 1.0,
     "max_grad_norm": 0.1,
     "extra_valid_tokenizer_names": [
-        "bucket/artifacts/madlad_final/gpt20001"
+        "artifacts/tokenizers/gpt20001"
     ],
     "extra_valid_files": [
         "/mnt/disks/persist/valid/en.parquet"

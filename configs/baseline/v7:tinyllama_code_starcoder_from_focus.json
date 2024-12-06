@@ -2,7 +2,7 @@
     "output_dir": "output2",
     "train_directory": "/mnt/disks/persist/train",
     "valid_directory": "/mnt/disks/persist/valid",
-    "langs": "bucket/artifacts/code.txt",
+    "langs": "artifacts/code.txt",
     "model_name_or_path": "bucket/output_t/TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T-starcoder-from-focus",
     "target_tokenizer_name": "bucket/output_t/TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T-starcoder-from-focus",
     "backbone_training": "full",
