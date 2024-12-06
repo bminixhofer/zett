@@ -4,7 +4,6 @@ from tqdm.auto import tqdm
 from pathlib import Path
 from dataclasses import dataclass
 from transformers import HfArgumentParser
-import os
 import math
 from typing import List, Optional
 

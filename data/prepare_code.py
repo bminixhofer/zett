@@ -5,7 +5,6 @@ from datasets import load_dataset
 from tqdm.auto import tqdm
 import pandas as pd
 from pathlib import Path
-import huggingface_hub
 
 
 @dataclass
