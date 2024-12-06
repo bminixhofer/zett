@@ -23,12 +23,12 @@
     ],
     "max_grad_norm": 0.1,
     "extra_valid_tokenizer_names": [
-        "bucket/artifacts/gpt2_raw",
-        "bucket/artifacts/en_raw",
-        "bucket/artifacts/de_raw",
-        "bucket/artifacts/de_raw",
-        "bucket/artifacts/gpt2_unigramify",
-        "bucket/artifacts/gpt_neox_unigramify"
+        "artifacts/tokenizers/gpt2_raw",
+        "artifacts/tokenizers/en_raw",
+        "artifacts/tokenizers/de_raw",
+        "artifacts/tokenizers/de_raw",
+        "artifacts/tokenizers/gpt20001",
+        "artifacts/tokenizers/gpt_neox0001"
     ],
     "extra_valid_files": [
         "/mnt/disks/persist/valid/en.parquet",

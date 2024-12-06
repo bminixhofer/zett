@@ -23,7 +23,7 @@
     ],
     "max_grad_norm": 0.1,
     "extra_valid_tokenizer_names": [
-        "bucket/artifacts/en_raw"
+        "artifacts/tokenizers/en_raw"
     ],
     "extra_valid_files": [
         "/mnt/disks/persist/valid/en.parquet"
