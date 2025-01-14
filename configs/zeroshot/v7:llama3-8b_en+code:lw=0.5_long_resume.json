@@ -27,7 +27,7 @@
     "max_grad_norm": 0.1,
     "extra_valid_tokenizer_names": [
         "artifacts/tokenizers/en_raw",
-        "bucket/artifacts/madlad/starcoder0001"
+        "artifacts/tokenizers/starcoder0001"
     ],
     "extra_valid_files": [
         "/mnt/disks/persist/valid/en.parquet",

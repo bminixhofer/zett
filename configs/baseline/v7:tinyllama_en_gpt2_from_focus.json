@@ -3,8 +3,8 @@
     "train_directory": "/mnt/disks/persist/train",
     "valid_directory": "/mnt/disks/persist/valid",
     "langs": "flan",
-    "model_name_or_path": "bucket/output_t/TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T-gpt2-from-focus",
-    "target_tokenizer_name": "bucket/output_t/TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T-gpt2-from-focus",
+    "model_name_or_path": "benjamin/TinyLlama-1.1B-intermediate-step-1431k-3T-gpt2-from-focus",
+    "target_tokenizer_name": "benjamin/TinyLlama-1.1B-intermediate-step-1431k-3T-gpt2-from-focus",
     "backbone_training": "full",
     "hn_model_name_or_path": null,
     "use_passthrough_hypernet": true,
@@ -28,7 +28,7 @@
     "max_grad_norm": 0.1,
     "learning_rate_alpha": 1.0,
     "extra_valid_tokenizer_names": [
-        "bucket/output_t/TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T-gpt2-from-focus"
+        "benjamin/TinyLlama-1.1B-intermediate-step-1431k-3T-gpt2-from-focus"
     ],
     "extra_valid_files": [
         "/mnt/disks/persist/valid/en.parquet"

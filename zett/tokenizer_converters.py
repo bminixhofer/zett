@@ -260,7 +260,10 @@ def convert_to_byte_level(
         merges = []
 
         for merge in tokenizer_data["model"]["merges"]:
-            x, y = merge.split(" ")
+            if isinstance(merge, str):
+                x, y = merge.split(" ")
+            else:
+                x, y = merge
             x = to_byte_fn(x)
             y = to_byte_fn(y)
 

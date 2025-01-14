@@ -4,7 +4,7 @@
     "valid_directory": "/mnt/disks/persist/valid",
     "langs": "artifacts/code.txt",
     "model_name_or_path": "TinyLlama/TinyLlama-1.1B-intermediate-step-1431k-3T",
-    "init_from_params": "bucket/models/v7_tinyllama_final",
+    "init_from_params": "benjamin/zett-hypernetwork-TinyLlama-1.1B-intermediate-step-1431k-3T",
     "target_tokenizer_name": "artifacts/tokenizers/starcoder0001",
     "revision": "refs/pr/8",
     "backbone_training": "full",

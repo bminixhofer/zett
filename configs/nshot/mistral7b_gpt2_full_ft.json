@@ -4,7 +4,7 @@
     "valid_directory": "/mnt/disks/persist/valid",
     "langs": "flan",
     "model_name_or_path": "mistralai/Mistral-7B-v0.1",
-    "init_from_params": "bucket/models/v7_mistral_final",
+    "init_from_params": "benjamin/zett-hypernetwork-Mistral-7B-v0.1",
     "target_tokenizer_name": "artifacts/tokenizers/gpt20001",
     "revision": "refs/pr/95",
     "backbone_training": "full",

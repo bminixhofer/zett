@@ -29,6 +29,7 @@ from jax.experimental.multihost_utils import (
     process_allgather,
 )
 from jax.sharding import PartitionSpec as P, NamedSharding
+from transformers.utils.hub import cached_file
 
 from transformers import (
     FLAX_MODEL_FOR_CAUSAL_LM_MAPPING,
@@ -169,6 +170,7 @@ MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 class TrainState(train_state.TrainState):
     dropout_rng: jnp.ndarray
     source_embeddings: jnp.ndarray
+
 
 def prepare_batch(batch, metrics=None):
     batch_metrics = batch.pop("metrics", None)
@@ -359,13 +361,12 @@ def main():
         config.hn_n_extra_tokens = hn_n_extra_tokens
 
     if training_args.init_from_params is not None:
+        path_to_params = cached_file(
+            training_args.init_from_params, "flax_model.msgpack"
+        )
+
         flat_pretrained_params = traverse_util.flatten_dict(
-            serialization.msgpack_restore(
-                open(
-                    os.path.join(training_args.init_from_params, "flax_model.msgpack"),
-                    "rb",
-                ).read()
-            )
+            serialization.msgpack_restore(open(path_to_params, "rb").read())
         )
 
         full_weights_path = os.path.join(training_args.init_from_params, "full_model")
@@ -662,6 +663,7 @@ def main():
     hypernet_fn = hypernet.apply
 
     def init_state(source_embeddings, model_params, flat_pretrained_params):
+        source_embeddings = source_embeddings.astype(getattr(jnp, model_args.dtype))
         source_embeddings_in = source_embeddings[:, : hn_args.n_embd]
         source_embeddings_out = (
             source_embeddings[:, hn_args.n_embd :]
@@ -675,9 +677,9 @@ def main():
             }
 
             if out_embedding_path is not None:
-                flat_hypernet_params[
-                    ("output_embeddings", "embedding")
-                ] = source_embeddings_out
+                flat_hypernet_params[("output_embeddings", "embedding")] = (
+                    source_embeddings_out
+                )
 
             hypernet_params = traverse_util.unflatten_dict(flat_hypernet_params)
 
@@ -784,36 +786,10 @@ def main():
             resume_step = local_state.step
         state = host_local_array_to_global_array(local_state, MESH, state_pspecs)
     else:
-        flat_pretrained_shardings = {
-            k: v
-            for k, v in traverse_util.flatten_dict(
-                state_shardings.params["hypernet"]
-            ).items()
-            if k in flat_pretrained_params
-        }
-        in_shardings = (
-            state_shardings.source_embeddings,
-            state_shardings.params["inner"],
-            flat_pretrained_shardings,
-        )
         init_args = (source_embeddings, model_params, flat_pretrained_params)
 
-        def make_global_array(x, sharding):
-            if x is None:
-                return None
-
-            if sharding is None:
-                return x
-
-            def cb(index):
-                return x[index]
-
-            return jax.make_array_from_callback(x.shape, sharding, cb)
-
-        init_args = jax.tree_map(make_global_array, init_args, in_shardings)
-
         state = jax.jit(
-            init_state, in_shardings=in_shardings, out_shardings=state_shardings
+            init_state, out_shardings=state_shardings
         )(*init_args)
         resume_step = 0
 
@@ -1052,9 +1028,9 @@ def main():
                     predicted_embeddings_out = predicted_embeddings_out.at[
                         special_indices
                     ].set(source_embeddings_out[special_indices_in_reference])
-                params_with_updated_embeddings[
-                    out_embedding_path
-                ] = predicted_embeddings_out.T
+                params_with_updated_embeddings[out_embedding_path] = (
+                    predicted_embeddings_out.T
+                )
 
             params_with_updated_embeddings = traverse_util.unflatten_dict(
                 params_with_updated_embeddings
@@ -1303,12 +1279,14 @@ def main():
                 identity_train_step,
                 in_shardings=(state_shardings, identity_batch_shardings),
                 out_shardings=(state_shardings, None),
+                donate_argnums=(0,),
             )
 
         train_step = jax.jit(
             train_step,
             in_shardings=(state_shardings, batch_shardings),
             out_shardings=(state_shardings, None),
+            donate_argnums=(0,),
         )
         eval_step = jax.jit(
             eval_step, in_shardings=(state_shardings, batch_shardings, None, None, None)

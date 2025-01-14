@@ -27,7 +27,7 @@
         "artifacts/tokenizers/en_raw",
         "artifacts/tokenizers/de_raw",
         "artifacts/tokenizers/de_raw",
-        "bucket/artifacts/roberta_unigramify"
+        "artifacts/tokenizers/roberta0001"
     ],
     "extra_valid_files": [
         "/mnt/disks/persist/valid/en.parquet",
